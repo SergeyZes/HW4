@@ -26,7 +26,9 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private EditText editText;
     private Button btnLoad;
+    private Button btnLoadOne;
     RestAPI restAPI;
+    RestAPIforUser restAPIforUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progress_bar);
         btnLoad = findViewById(R.id.btn_load);
         btnLoad.setOnClickListener(v -> onClick());
+        btnLoadOne = findViewById(R.id.btn_load_one);
+        btnLoadOne.setOnClickListener(v -> onClickOne());
     }
 
     private void onClick() {
@@ -68,6 +72,36 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void onClickOne() {
+        mInfoTextView.setText("");
+        Retrofit retrofit = null;
+        try {
+            retrofit = new Retrofit.Builder().baseUrl("https://api.github.com/").addConverterFactory(GsonConverterFactory.create())
+                    .build();
+            restAPIforUser = retrofit.create(RestAPIforUser.class);
+
+        } catch (Exception io) {
+            mInfoTextView.setText("no retrofit: " + io.getMessage());
+            return;
+        }
+
+        Call<RetrofitModel> call = restAPIforUser.loadUsers(editText.getText().toString());
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+
+        if (networkInfo != null && networkInfo.isConnected()) {
+            try {
+                progressBar.setVisibility(View.VISIBLE);
+                downloadOneUser(call);
+            } catch (Exception e) {
+                mInfoTextView.setText(e.getMessage());
+            }
+        } else Toast.makeText(this, "Подключите интернет", Toast.LENGTH_SHORT).show();
+
+
+    }
+
+
     private void downloadOneUrl(Call<List<RetrofitModel>> call) throws IOException {
         call.enqueue(new Callback<List<RetrofitModel>>() {
             @Override
@@ -81,13 +115,38 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } else if (response != null)
                     mInfoTextView.setText("onResponse error: " + response.code());
-                progressBar.setVisibility(View.INVISIBLE);
+                progressBar.setVisibility(View.GONE);
             }
 
             @Override
             public void onFailure(Call<List<RetrofitModel>> call, Throwable t) {
                 mInfoTextView.setText("onFailure " + t.getMessage());
-                progressBar.setVisibility(View.INVISIBLE);
+                progressBar.setVisibility(View.GONE);
+
+            }
+        });
+
+    }
+
+    private void downloadOneUser(Call<RetrofitModel> call) throws IOException {
+        call.enqueue(new Callback<RetrofitModel>() {
+            @Override
+            public void onResponse(Call<RetrofitModel> call, Response<RetrofitModel> response) {
+                if (response != null && response.isSuccessful()) {
+                    RetrofitModel curRetrofitModel = null;
+                    curRetrofitModel = response.body();
+                    mInfoTextView.append("\nLogin=" + curRetrofitModel.getLogin() + "\nId=" + curRetrofitModel.getId() +
+                            "\nURI=" + curRetrofitModel.getAvatarUrl() + "\n--------");
+
+                } else if (response != null)
+                    mInfoTextView.setText("onResponse error: " + response.code());
+                progressBar.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onFailure(Call<RetrofitModel> call, Throwable t) {
+                mInfoTextView.setText("onFailure " + t.getMessage());
+                progressBar.setVisibility(View.GONE);
 
             }
         });
