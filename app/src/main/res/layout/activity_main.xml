@@ -46,6 +46,13 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="4dp"
             android:text="Загр. одного" />
+
+        <Button
+            android:id="@+id/btn_load_reps"
+            android:layout_marginLeft="4dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Репоз."/>
     </LinearLayout>
 
     <ScrollView
